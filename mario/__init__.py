@@ -28,6 +28,9 @@ class Box:
 class Block(Box):
     block_1 = QtCore.QRect(0, 0, 16, 16)
     block_2 = QtCore.QRect(16, 0, 16, 16)
+    block_3 = QtCore.QRect(32, 0, 16, 16)
+    block_4 = QtCore.QRect(48, 0, 16, 16)
+    block_5 = QtCore.QRect(63, 0, 16, 16)
 
     def __init__(self, scene, src_rect, pos, size):
         super().__init__(scene, pos, size)
@@ -75,6 +78,8 @@ class Mario(Box):
     right_walk_seq = [right_start, right_walk_1, right_walk_2]
 
     walk_animation_speed = 0.1
+    walk_speed_max = 10.
+    walk_speed_acel = 1
 
     class States(enum.Enum):
         WAIT_LEFT = 1
@@ -89,37 +94,66 @@ class Mario(Box):
         self.state = self.States.WAIT_LEFT
         self.start_time = time.time()
         self.src_rect = self.left_stay
+        self.speed = [0, 0.0]
 
     def update(self, painter):
-        target = self.rect()
 
         # update states
         if self.state == self.States.WAIT_LEFT:
             self.src_rect = self.left_stay
+            self.speed[0] = 0
             self.check_start_move()
         elif self.state == self.States.WAIT_RIGHT:
             self.src_rect = self.right_stay
+            self.speed[0] = 0
             self.check_start_move()
         elif self.state == self.States.RUN_LEFT:
             if not self.scene.key_map.get(Qt.Key_Left, 0):
-                self.state = self.States.WAIT_LEFT
-                self.src_rect = self.left_stay
+                if self.speed[0] != 0.0:
+                    self.speed[0] += self.walk_speed_acel
+                    self.src_rect = self.left_walk_seq[int(
+                        (time.time() - self.start_time) /
+                        self.walk_animation_speed) % len(self.left_walk_seq)]
+                else:
+                    self.state = self.States.WAIT_LEFT
+                    self.src_rect = self.left_stay
+                    self.speed[0] = 0
             else:
                 self.src_rect = self.left_walk_seq[int(
                     (time.time() - self.start_time) /
                     self.walk_animation_speed) % len(self.left_walk_seq)]
+
+                self.speed[0] -= self.walk_speed_acel
+                if self.speed[0] < -self.walk_speed_max:
+                    self.speed[0] = -self.walk_speed_max
+
         elif self.state == self.States.RUN_RIGHT:
             if not self.scene.key_map.get(Qt.Key_Right, 0):
-                self.state = self.States.WAIT_RIGHT
-                self.src_rect = self.right_stay
+                if self.speed[0] != 0.0:
+                    self.speed[0] -= self.walk_speed_acel
+                    self.src_rect = self.right_walk_seq[int(
+                        (time.time() - self.start_time) /
+                        self.walk_animation_speed) % len(self.right_walk_seq)]
+                else:
+                    self.state = self.States.WAIT_RIGHT
+                    self.src_rect = self.right_stay
+                    self.speed[0] = 0
             else:
                 self.src_rect = self.right_walk_seq[int(
                     (time.time() - self.start_time) /
                     self.walk_animation_speed) % len(self.right_walk_seq)]
+
+                self.speed[0] += self.walk_speed_acel
+                if self.speed[0] > self.walk_speed_max:
+                    self.speed[0] = self.walk_speed_max
         elif self.state == self.States.JUMP_LEFT:
             pass
         elif self.state == self.States.JUMP_RIGHT:
             pass
+
+        self.pos[0] += self.speed[0]
+        self.pos[1] += self.speed[1]
+        target = self.rect()
 
         painter.drawPixmap(
             target,
@@ -182,10 +216,10 @@ class SceneWidget(QtWidgets.QWidget):
         mario = Mario(self.scene, [0.0, -40])
         self.scene.items.append(mario)
 
-        block = Block(self.scene, Block.block_1, [-1000, 0], [2000, 32])
+        block = Block(self.scene, Block.block_1, [-1000, 0], [2000, 16])
         self.scene.items.append(block)
 
-        block = Block(self.scene, Block.block_2, [-1000, 32], [2000, 32])
+        block = Block(self.scene, Block.block_5, [-1000, 16], [2000, 32])
         self.scene.items.append(block)
 
         self.setBackgroundRole(QtGui.QPalette.Base)
