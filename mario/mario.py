@@ -63,7 +63,6 @@ class Mario(shape.Shape):
     def update(self, painter):
         x_accel = 0.
         y_accel = self.scene.gravity_accel
-
         if self.scene.key_map.get(Qt.Key_Left, 0):
             x_accel = -self.walk_accel
             self.direction = self.Direction.LEFT
@@ -73,6 +72,7 @@ class Mario(shape.Shape):
             self.direction = self.Direction.RIGHT
         if self.scene.key_map.get(Qt.Key_Space, 0) and self.landing:
             self.speed[1] = -self.max_jump_speed
+            self.scene.key_map[Qt.Key_Space] = 0
 
         #
         fx_speed = math.fabs(self.speed[0])

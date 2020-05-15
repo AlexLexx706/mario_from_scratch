@@ -10,7 +10,9 @@ from mario import Mario
 
 LOG = logging.getLogger(__name__)
 
+
 class SceneWidget(QtWidgets.QWidget):
+    text_font = QtGui.QFont("Arial", 30)
 
     def __init__(self, parent=None):
         super(SceneWidget, self).__init__(parent)
@@ -24,7 +26,6 @@ class SceneWidget(QtWidgets.QWidget):
 
         # create scene and mario
         self.scene = Scene()
-
         mario = Mario(self.scene, [0.0, -100])
 
         block = Block(self.scene, Block.block_1, [-1000, 0], [2000, 16])
@@ -57,17 +58,19 @@ class SceneWidget(QtWidgets.QWidget):
             False)
 
         painter.setPen(Qt.blue)
-        painter.setFont(QtGui.QFont("Arial", 30))
+        painter.setFont(self.text_font)
         painter.drawText(0, 30, "frame:%d time:%3.3f" % (
             self.frame_no, time.time() - self.start_time))
         painter.translate(self.width() / 2, self.height() / 2)
         self.scene.update(painter)
 
     def keyPressEvent(self, event):
-        self.scene.key_map[event.key()] = 1
+        if not event.isAutoRepeat():
+            self.scene.key_map[event.key()] = 1
 
     def keyReleaseEvent(self, event):
-        self.scene.key_map[event.key()] = 0
+        if not event.isAutoRepeat():
+            self.scene.key_map[event.key()] = 0
 
 
 if __name__ == '__main__':
