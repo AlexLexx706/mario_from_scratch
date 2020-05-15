@@ -108,7 +108,7 @@ class Mario(shape.Shape):
                             self.landing_flag = True
                     self.move(offset)
 
-        # draw marion
+        # draw mario
         painter.drawPixmap(
             self.rect(),
             self.scene.mario_pixmap,
