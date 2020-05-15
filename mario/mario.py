@@ -1,0 +1,197 @@
+#!/usr/bin/env python
+
+from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
+import enum
+import time
+import shape
+import math
+
+
+class Mario(shape.Shape):
+    left_jump = QtCore.QRectF(29, 0, 18, 16)
+    left_stop = QtCore.QRectF(58, 0, 18, 16)
+    left_start = QtCore.QRectF(88, 0, 18, 16)
+    left_walk_1 = QtCore.QRectF(118, 0, 18, 16)
+    left_walk_2 = QtCore.QRectF(148, 0, 18, 16)
+    left_stay = QtCore.QRectF(178, 0, 18, 16)
+
+    right_stay = QtCore.QRectF(208, 0, 18, 16)
+    right_walk_2 = QtCore.QRectF(238, 0, 18, 16)
+    right_walk_1 = QtCore.QRectF(268, 0, 18, 16)
+    right_start = QtCore.QRectF(298, 0, 18, 16)
+    right_stop = QtCore.QRectF(328, 0, 18, 16)
+    right_jump = QtCore.QRectF(358, 0, 18, 16)
+
+    fail_left = QtCore.QRectF(0, 15, 15, 16)
+    fail_right = QtCore.QRectF(390, 15, 15, 16)
+
+    left_walk_seq = [left_start, left_walk_1, left_walk_2]
+    right_walk_seq = [right_start, right_walk_1, right_walk_2]
+
+    walk_animation_speed = 0.1
+    walk_speed_max = 10.
+    walk_accel = 1.
+    stop_accel = 1.5
+    run_speed_max = 20.
+
+    max_jump_speed = 15.
+
+    class States(enum.Enum):
+        WAIT_LEFT = 1
+        WAIT_RIGHT = 2
+        RUN_LEFT = 3
+        RUN_RIGHT = 4
+        JUMP_LEFT = 5
+        JUMP_RIGHT = 6
+
+    def __init__(self, scene, pos):
+        super().__init__(scene, pos, [40, 40])
+        self.state = self.States.WAIT_LEFT
+        self.start_time = time.time()
+        self.src_rect = self.left_stay
+        self.speed = [0.0, 0.0]
+        self.collision_counter = 0
+        self.landing = 0
+
+    def update(self, painter):
+        x_accel = 0.
+        y_accel = self.scene.gravity_accel
+
+        if self.scene.key_map.get(Qt.Key_Left, 0):
+            x_accel = -self.walk_accel
+        # start move right
+        elif self.scene.key_map.get(Qt.Key_Right, 0):
+            x_accel = self.walk_accel
+        if self.scene.key_map.get(Qt.Key_Space, 0) and self.landing:
+            self.speed[1] = -self.max_jump_speed
+
+        #
+        fx_speed = math.fabs(self.speed[0])
+
+        # try stop mario
+        if fx_speed > 0. and x_accel == 0.:
+            stop_accel = self.stop_accel if\
+                self.stop_accel < fx_speed else fx_speed
+            x_accel = stop_accel if self.speed[0] < 0 else -stop_accel
+
+        self.speed[0] += x_accel
+        self.speed[1] += y_accel
+
+        # checks x speed limmit
+        fx_speed = math.fabs(self.speed[0])
+        if fx_speed > self.walk_speed_max:
+            self.speed[0] = self.walk_speed_max if self.speed[0] > 0\
+                else -self.walk_speed_max
+
+        # checks x speed limmit
+        fy_speed = math.fabs(self.speed[1])
+        if fy_speed > self.max_jump_speed:
+            self.speed[1] = self.max_jump_speed if self.speed[1] > 0\
+                else -self.max_jump_speed
+
+        # updates position
+        self.pos[0] += self.speed[0]
+        self.pos[1] += self.speed[1]
+
+        # collision detection
+        self.landing = False
+        for item in self.scene.items:
+            if item != self:
+                if self.is_intersected(item):
+                    offset = self.get_offset(item)
+
+                    if offset[0] != 0:
+                        self.speed[0] = 0.
+                    else:
+                        self.speed[1] = 0
+                        if offset[1] < 0.:
+                            self.landing = True
+                    self.move(offset)
+
+        target = self.rect()
+
+        painter.drawPixmap(
+            target,
+            self.scene.mario_pixmap,
+            self.src_rect)
+
+        # painter.drawRect(target)
+
+    def _update(self, painter):
+
+        # update states
+        if self.state == self.States.WAIT_LEFT:
+            self.src_rect = self.left_stay
+            self.speed[0] = 0
+            self.check_start_move()
+        elif self.state == self.States.WAIT_RIGHT:
+            self.src_rect = self.right_stay
+            self.speed[0] = 0
+            self.check_start_move()
+        elif self.state == self.States.RUN_LEFT:
+            if not self.scene.key_map.get(Qt.Key_Left, 0):
+                if self.speed[0] != 0.0:
+                    self.speed[0] += self.walk_accel
+                    self.src_rect = self.left_walk_seq[int(
+                        (time.time() - self.start_time) /
+                        self.walk_animation_speed) % len(self.left_walk_seq)]
+                else:
+                    self.state = self.States.WAIT_LEFT
+                    self.src_rect = self.left_stay
+                    self.speed[0] = 0
+            else:
+                self.src_rect = self.left_walk_seq[int(
+                    (time.time() - self.start_time) /
+                    self.walk_animation_speed) % len(self.left_walk_seq)]
+
+                self.speed[0] -= self.walk_accel
+                if self.speed[0] < -self.walk_speed_max:
+                    self.speed[0] = -self.walk_speed_max
+
+        elif self.state == self.States.RUN_RIGHT:
+            if not self.scene.key_map.get(Qt.Key_Right, 0):
+                if self.speed[0] != 0.0:
+                    self.speed[0] -= self.walk_accel
+                    self.src_rect = self.right_walk_seq[int(
+                        (time.time() - self.start_time) /
+                        self.walk_animation_speed) % len(self.right_walk_seq)]
+                else:
+                    self.state = self.States.WAIT_RIGHT
+                    self.src_rect = self.right_stay
+                    self.speed[0] = 0
+            else:
+                self.src_rect = self.right_walk_seq[int(
+                    (time.time() - self.start_time) /
+                    self.walk_animation_speed) % len(self.right_walk_seq)]
+
+                self.speed[0] += self.walk_accel
+                if self.speed[0] > self.walk_speed_max:
+                    self.speed[0] = self.walk_speed_max
+        elif self.state == self.States.JUMP_LEFT:
+            pass
+        elif self.state == self.States.JUMP_RIGHT:
+            pass
+
+        self.pos[0] += self.speed[0]
+        self.pos[1] += self.speed[1]
+        target = self.rect()
+
+        painter.drawPixmap(
+            target,
+            self.scene.mario_pixmap,
+            self.src_rect)
+
+        painter.drawRect(target)
+
+    def check_start_move(self):
+        # start move left
+        if self.scene.key_map.get(Qt.Key_Left, 0):
+            self.state = self.States.RUN_LEFT
+            self.src_rect = self.left_start
+            self.start_time = time.time()
+        # start move right
+        elif self.scene.key_map.get(Qt.Key_Right, 0):
+            self.state = self.States.RUN_RIGHT
+            self.src_rect = self.right_start
+            self.start_time = time.time()
