@@ -52,6 +52,8 @@ class Mario(shape.Shape):
     def update(self, painter):
         x_accel = 0.
         y_accel = self.scene.gravity_accel
+
+        # checks control
         if self.scene.key_map.get(Qt.Key_Left, 0):
             x_accel = -self.walk_accel
             self.direction = self.Direction.LEFT
@@ -63,10 +65,8 @@ class Mario(shape.Shape):
             self.speed[1] = -self.max_jump_speed
             self.scene.key_map[Qt.Key_Space] = 0
 
-        #
-        fx_speed = math.fabs(self.speed[0])
-
         # try stop mario
+        fx_speed = math.fabs(self.speed[0])
         if fx_speed > 0. and x_accel == 0.:
             stop_accel = self.stop_accel if\
                 self.stop_accel < fx_speed else fx_speed
