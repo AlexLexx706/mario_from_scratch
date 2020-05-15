@@ -112,10 +112,10 @@ class Mario(shape.Shape):
         painter.drawPixmap(
             self.rect(),
             self.scene.mario_pixmap,
-            self.get_src_rect())
+            self.get_sprite_rect())
         self.old_speed = self.speed
 
-    def get_src_rect(self):
+    def get_sprite_rect(self):
         # not jump
         if self.speed[1] == 0 and self.landing_flag:
             # not move
@@ -156,15 +156,3 @@ class Mario(shape.Shape):
                 return self.left_jump
             else:
                 return self.right_jump
-
-    def check_start_move(self):
-        # start move left
-        if self.scene.key_map.get(Qt.Key_Left, 0):
-            self.state = self.States.RUN_LEFT
-            self.src_rect = self.left_start
-            self.start_time = time.time()
-        # start move right
-        elif self.scene.key_map.get(Qt.Key_Right, 0):
-            self.state = self.States.RUN_RIGHT
-            self.src_rect = self.right_start
-            self.start_time = time.time()
