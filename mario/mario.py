@@ -61,6 +61,7 @@ class Mario(shape.Shape):
         elif self.scene.key_map.get(Qt.Key_Right, 0):
             x_accel = self.walk_accel
             self.direction = self.Direction.RIGHT
+        # try jump
         if self.scene.key_map.get(Qt.Key_Space, 0) and self.landing_flag:
             self.speed[1] = -self.max_jump_speed
             self.scene.key_map[Qt.Key_Space] = 0
