@@ -17,6 +17,7 @@ class SceneWidget(QtWidgets.QWidget):
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.next_animation_frame)
         self.timer.start(50)
+        # self.timer.start(1000)
         self.start_time = time.time()
         self.frame_no = 0
         self.antialiased = True
@@ -32,10 +33,10 @@ class SceneWidget(QtWidgets.QWidget):
         block = Block(self.scene, Block.block_5, [-1000, -300], [2000, 32])
         self.scene.items.append(block)
 
-        block = Block(self.scene, Block.block_5, [-128, -32], [80, 32])
+        block = Block(self.scene, Block.block_5, [-128, -32], [65, 32])
         self.scene.items.append(block)
 
-        block = Block(self.scene, Block.block_5, [0, -128], [80, 32])
+        block = Block(self.scene, Block.block_5, [0, -128], [65, 32])
         self.scene.items.append(block)
 
         self.scene.items.append(mario)

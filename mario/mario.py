@@ -34,8 +34,11 @@ class Mario(shape.Shape):
     walk_accel = 1.
     stop_accel = 1.5
     run_speed_max = 20.
-
     max_jump_speed = 15.
+
+    class Direction(enum.Enum):
+        LEFT = 0
+        RIGHT = 1
 
     class States(enum.Enum):
         WAIT_LEFT = 1
@@ -51,8 +54,11 @@ class Mario(shape.Shape):
         self.start_time = time.time()
         self.src_rect = self.left_stay
         self.speed = [0.0, 0.0]
+        self.old_speed = [0.0, 0.0]
+
         self.collision_counter = 0
         self.landing = 0
+        self.direction = self.Direction.LEFT
 
     def update(self, painter):
         x_accel = 0.
@@ -60,9 +66,11 @@ class Mario(shape.Shape):
 
         if self.scene.key_map.get(Qt.Key_Left, 0):
             x_accel = -self.walk_accel
+            self.direction = self.Direction.LEFT
         # start move right
         elif self.scene.key_map.get(Qt.Key_Right, 0):
             x_accel = self.walk_accel
+            self.direction = self.Direction.RIGHT
         if self.scene.key_map.get(Qt.Key_Space, 0) and self.landing:
             self.speed[1] = -self.max_jump_speed
 
@@ -75,6 +83,7 @@ class Mario(shape.Shape):
                 self.stop_accel < fx_speed else fx_speed
             x_accel = stop_accel if self.speed[0] < 0 else -stop_accel
 
+        # update speed
         self.speed[0] += x_accel
         self.speed[1] += y_accel
 
@@ -84,7 +93,7 @@ class Mario(shape.Shape):
             self.speed[0] = self.walk_speed_max if self.speed[0] > 0\
                 else -self.walk_speed_max
 
-        # checks x speed limmit
+        # checks y speed limmit
         fy_speed = math.fabs(self.speed[1])
         if fy_speed > self.max_jump_speed:
             self.speed[1] = self.max_jump_speed if self.speed[1] > 0\
@@ -109,80 +118,54 @@ class Mario(shape.Shape):
                             self.landing = True
                     self.move(offset)
 
-        target = self.rect()
-
+        # draw marion
         painter.drawPixmap(
-            target,
+            self.rect(),
             self.scene.mario_pixmap,
-            self.src_rect)
+            self.get_src_rect())
+        self.old_speed = self.speed
 
-        # painter.drawRect(target)
-
-    def _update(self, painter):
-
-        # update states
-        if self.state == self.States.WAIT_LEFT:
-            self.src_rect = self.left_stay
-            self.speed[0] = 0
-            self.check_start_move()
-        elif self.state == self.States.WAIT_RIGHT:
-            self.src_rect = self.right_stay
-            self.speed[0] = 0
-            self.check_start_move()
-        elif self.state == self.States.RUN_LEFT:
-            if not self.scene.key_map.get(Qt.Key_Left, 0):
-                if self.speed[0] != 0.0:
-                    self.speed[0] += self.walk_accel
-                    self.src_rect = self.left_walk_seq[int(
-                        (time.time() - self.start_time) /
-                        self.walk_animation_speed) % len(self.left_walk_seq)]
+    def get_src_rect(self):
+        # not jump
+        if self.speed[1] == 0 and self.landing:
+            # not move
+            if self.speed[0] == 0:
+                if self.direction == self.Direction.LEFT:
+                    return self.left_stay
                 else:
-                    self.state = self.States.WAIT_LEFT
-                    self.src_rect = self.left_stay
-                    self.speed[0] = 0
+                    return self.right_stay
+            # move
             else:
-                self.src_rect = self.left_walk_seq[int(
-                    (time.time() - self.start_time) /
-                    self.walk_animation_speed) % len(self.left_walk_seq)]
-
-                self.speed[0] -= self.walk_accel
-                if self.speed[0] < -self.walk_speed_max:
-                    self.speed[0] = -self.walk_speed_max
-
-        elif self.state == self.States.RUN_RIGHT:
-            if not self.scene.key_map.get(Qt.Key_Right, 0):
-                if self.speed[0] != 0.0:
-                    self.speed[0] -= self.walk_accel
-                    self.src_rect = self.right_walk_seq[int(
-                        (time.time() - self.start_time) /
-                        self.walk_animation_speed) % len(self.right_walk_seq)]
-                else:
-                    self.state = self.States.WAIT_RIGHT
-                    self.src_rect = self.right_stay
-                    self.speed[0] = 0
+                # move left
+                if self.speed[0] < 0.:
+                    # move left
+                    if self.direction == self.Direction.LEFT:
+                        if self.old_speed[0] >= 0:
+                            self.start_time = time.time()
+                        return self.left_walk_seq[int(
+                            (time.time() - self.start_time) /
+                            self.walk_animation_speed) % len(self.left_walk_seq)]
+                    # change direction
+                    else:
+                        return self.left_stop
+                # move right
+                elif self.speed[0] > 0.:
+                    # move right
+                    if self.direction == self.Direction.RIGHT:
+                        if self.old_speed[0] <= 0.:
+                            self.start_time = time.time()
+                        return self.right_walk_seq[int(
+                            (time.time() - self.start_time) /
+                            self.walk_animation_speed) % len(self.right_walk_seq)]
+                    # change direction
+                    else:
+                        return self.right_stop
+        # jump
+        else:
+            if self.direction == self.Direction.LEFT:
+                return self.left_jump
             else:
-                self.src_rect = self.right_walk_seq[int(
-                    (time.time() - self.start_time) /
-                    self.walk_animation_speed) % len(self.right_walk_seq)]
-
-                self.speed[0] += self.walk_accel
-                if self.speed[0] > self.walk_speed_max:
-                    self.speed[0] = self.walk_speed_max
-        elif self.state == self.States.JUMP_LEFT:
-            pass
-        elif self.state == self.States.JUMP_RIGHT:
-            pass
-
-        self.pos[0] += self.speed[0]
-        self.pos[1] += self.speed[1]
-        target = self.rect()
-
-        painter.drawPixmap(
-            target,
-            self.scene.mario_pixmap,
-            self.src_rect)
-
-        painter.drawRect(target)
+                return self.right_jump
 
     def check_start_move(self):
         # start move left

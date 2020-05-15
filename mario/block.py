@@ -26,5 +26,5 @@ class Block(shape.Shape):
     def update(self, painter):
         self.brush.setTransform(self.transform)
         painter.setBrush(self.brush)
-        painter.setPen(Qt.darkCyan)
+        painter.setPen(Qt.NoPen)
         painter.drawRect(self.rect())
