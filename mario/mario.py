@@ -40,23 +40,12 @@ class Mario(shape.Shape):
         LEFT = 0
         RIGHT = 1
 
-    class States(enum.Enum):
-        WAIT_LEFT = 1
-        WAIT_RIGHT = 2
-        RUN_LEFT = 3
-        RUN_RIGHT = 4
-        JUMP_LEFT = 5
-        JUMP_RIGHT = 6
-
     def __init__(self, scene, pos):
         super().__init__(scene, pos, [40, 40])
-        self.state = self.States.WAIT_LEFT
         self.start_time = time.time()
         self.src_rect = self.left_stay
         self.speed = [0.0, 0.0]
         self.old_speed = [0.0, 0.0]
-
-        self.collision_counter = 0
         self.landing = 0
         self.direction = self.Direction.LEFT
 
