@@ -46,7 +46,7 @@ class Mario(shape.Shape):
         self.src_rect = self.left_stay
         self.speed = [0.0, 0.0]
         self.old_speed = [0.0, 0.0]
-        self.landing = 0
+        self.landing_flag = 0
         self.direction = self.Direction.LEFT
 
     def update(self, painter):
@@ -61,7 +61,7 @@ class Mario(shape.Shape):
         elif self.scene.key_map.get(Qt.Key_Right, 0):
             x_accel = self.walk_accel
             self.direction = self.Direction.RIGHT
-        if self.scene.key_map.get(Qt.Key_Space, 0) and self.landing:
+        if self.scene.key_map.get(Qt.Key_Space, 0) and self.landing_flag:
             self.speed[1] = -self.max_jump_speed
             self.scene.key_map[Qt.Key_Space] = 0
 
@@ -93,7 +93,7 @@ class Mario(shape.Shape):
         self.pos[1] += self.speed[1]
 
         # collision detection
-        self.landing = False
+        self.landing_flag = False
         for item in self.scene.items:
             if item != self:
                 if self.is_intersected(item):
@@ -104,7 +104,7 @@ class Mario(shape.Shape):
                     else:
                         self.speed[1] = 0
                         if offset[1] < 0.:
-                            self.landing = True
+                            self.landing_flag = True
                     self.move(offset)
 
         # draw marion
@@ -116,7 +116,7 @@ class Mario(shape.Shape):
 
     def get_src_rect(self):
         # not jump
-        if self.speed[1] == 0 and self.landing:
+        if self.speed[1] == 0 and self.landing_flag:
             # not move
             if self.speed[0] == 0:
                 if self.direction == self.Direction.LEFT:
