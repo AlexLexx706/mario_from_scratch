@@ -1,6 +1,6 @@
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import Qt
-import shape
+from mario import shape
 
 
 class Block(shape.Shape):

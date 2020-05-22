@@ -4,8 +4,8 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 import enum
 import time
-import shape
 import math
+from mario import shape
 
 
 class Mario(shape.Shape):
@@ -30,18 +30,19 @@ class Mario(shape.Shape):
     right_walk_seq = [right_start, right_walk_1, right_walk_2]
 
     walk_animation_speed = 0.1
-    walk_speed_max = 10.
+    walk_speed_max = 5.
     walk_accel = 1.
     stop_accel = 1.5
-    run_speed_max = 20.
-    max_jump_speed = 15.
+
+    run_speed_max = 10.
+    max_jump_speed = 13.
 
     class Direction(enum.Enum):
         LEFT = 0
         RIGHT = 1
 
     def __init__(self, scene, pos):
-        super().__init__(scene, pos, [40, 40])
+        super().__init__(scene, pos, [18, 18])
         self.start_time = time.time()
         self.src_rect = self.left_stay
         self.speed = [0.0, 0.0]
@@ -52,6 +53,7 @@ class Mario(shape.Shape):
     def update(self, painter):
         x_accel = 0.
         y_accel = self.scene.gravity_accel
+        max_x_speed = self.walk_speed_max
 
         # checks control
         if self.scene.key_map.get(Qt.Key_Left, 0):
@@ -66,6 +68,10 @@ class Mario(shape.Shape):
             self.speed[1] = -self.max_jump_speed
             self.scene.key_map[Qt.Key_Space] = 0
 
+        # press shift for run
+        if self.scene.key_map.get(Qt.Key_Shift, 0):
+            max_x_speed = self.run_speed_max
+
         # try stop mario
         fx_speed = math.fabs(self.speed[0])
         if fx_speed > 0. and x_accel == 0.:
@@ -79,9 +85,9 @@ class Mario(shape.Shape):
 
         # checks x speed limmit
         fx_speed = math.fabs(self.speed[0])
-        if fx_speed > self.walk_speed_max:
-            self.speed[0] = self.walk_speed_max if self.speed[0] > 0\
-                else -self.walk_speed_max
+        if fx_speed > max_x_speed:
+            self.speed[0] = max_x_speed if self.speed[0] > 0\
+                else -max_x_speed
 
         # checks y speed limmit
         fy_speed = math.fabs(self.speed[1])
