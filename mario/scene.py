@@ -8,7 +8,7 @@ LOG = logging.getLogger(__name__)
 
 
 class Scene:
-    gravity_accel = 1
+    gravity_accel = 100.
 
     def __init__(self):
         self.items = []

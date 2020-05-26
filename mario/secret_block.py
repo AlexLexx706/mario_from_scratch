@@ -22,12 +22,9 @@ class SecretBlock(shape.Shape):
     def update(self, painter):
         old_state = self.state
 
-        if self.intersection_info is not None and self.state == 0:
-            # check type of intersection with mario
-            if self.intersection_info[0][1] != 0 and\
-                    self.intersection_info[1][1] < 0.:
-                self.intersection_info = None
-                self.state = 1
+        if self.y_intersection == 1 and self.state == 0:
+            self.y_intersection = 0
+            self.state = 1
 
         # animate blinking
         if self.state == 0:
@@ -55,7 +52,7 @@ class SecretBlock(shape.Shape):
             self.pos[1] = self.start_jump_pos[1] - self.jump_distance
             src = self.last
         elif self.state == 3:
-            print("boom")
+            # print("boom")
             src = self.last
 
         painter.drawPixmap(

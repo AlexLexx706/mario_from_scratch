@@ -30,12 +30,14 @@ class Mario(shape.Shape):
     right_walk_seq = [right_start, right_walk_1, right_walk_2]
 
     walk_animation_speed = 0.1
-    walk_speed_max = 5.
-    walk_accel = 1.
-    stop_accel = 1.5
+
+    walk_speed_max = 70.
+    walk_accel = 100.
+    stop_accel = 100.
+    stop_speed = 10.
 
     run_speed_max = 10.
-    max_jump_speed = 13.
+    max_jump_speed = 100.
 
     class Direction(enum.Enum):
         LEFT = 0
@@ -45,12 +47,19 @@ class Mario(shape.Shape):
         super().__init__(scene, pos, [18, 18])
         self.start_time = time.time()
         self.src_rect = self.left_stay
-        self.speed = [0.0, 0.0]
         self.old_speed = [0.0, 0.0]
-        self.landing_flag = 0
         self.direction = self.Direction.LEFT
 
     def update(self, painter):
+        # draw mario
+        self.update_control()
+        painter.drawPixmap(
+            self.rect(),
+            self.scene.mario_pixmap,
+            self.get_sprite_rect())
+
+    def update_control(self):
+        # update acells
         x_accel = 0.
         y_accel = self.scene.gravity_accel
         max_x_speed = self.walk_speed_max
@@ -73,15 +82,19 @@ class Mario(shape.Shape):
             max_x_speed = self.run_speed_max
 
         # try stop mario
-        fx_speed = math.fabs(self.speed[0])
-        if fx_speed > 0. and x_accel == 0.:
-            stop_accel = self.stop_accel if\
-                self.stop_accel < fx_speed else fx_speed
-            x_accel = stop_accel if self.speed[0] < 0 else -stop_accel
+        if x_accel == 0:
+            # speed more then stop_window
+            if math.fabs(self.speed[0]) > self.stop_speed:
+                x_accel = self.stop_accel\
+                    if self.speed[0] < 0. else -self.stop_accel
+            # stop mario
+            else:
+                x_accel = 0
+                self.speed[0] = 0
 
         # update speed
-        self.speed[0] += x_accel
-        self.speed[1] += y_accel
+        self.speed[0] += self.scene.dt * x_accel
+        self.speed[1] += self.scene.dt * y_accel
 
         # checks x speed limmit
         fx_speed = math.fabs(self.speed[0])
@@ -95,31 +108,18 @@ class Mario(shape.Shape):
             self.speed[1] = self.max_jump_speed if self.speed[1] > 0\
                 else -self.max_jump_speed
 
-        # updates position
-        self.pos[0] += self.speed[0]
-        self.pos[1] += self.speed[1]
-
         # collision detection
         self.landing_flag = False
+
+        self.pos[0] += self.scene.dt * self.speed[0]
         for item in self.scene.items:
             if item != self:
-                if self.is_intersected(item):
-                    offset = self.get_offset(item)
-                    item.intersection_info = [offset, self.speed.copy()]
+                self.collision(item, True)
 
-                    if offset[0] != 0:
-                        self.speed[0] = 0.
-                    else:
-                        self.speed[1] = 0
-                        if offset[1] < 0.:
-                            self.landing_flag = True
-                    self.move(offset)
-
-        # draw mario
-        painter.drawPixmap(
-            self.rect(),
-            self.scene.mario_pixmap,
-            self.get_sprite_rect())
+        self.pos[1] += self.scene.dt * self.speed[1]
+        for item in self.scene.items:
+            if item != self:
+                self.collision(item, False)
         self.old_speed = self.speed
 
     def get_sprite_rect(self):
