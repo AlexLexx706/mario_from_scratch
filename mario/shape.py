@@ -7,6 +7,7 @@ class Shape:
         self.pos = pos
         self.size = size
         self.scene = scene
+        self.intersection_info = None
 
     def update(self, painter):
         pass

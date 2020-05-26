@@ -105,6 +105,7 @@ class Mario(shape.Shape):
             if item != self:
                 if self.is_intersected(item):
                     offset = self.get_offset(item)
+                    item.intersection_info = [offset, self.speed.copy()]
 
                     if offset[0] != 0:
                         self.speed[0] = 0.

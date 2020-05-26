@@ -45,7 +45,13 @@ class SceneWidget(QtWidgets.QWidget):
         # block = Block(self.scene, Block.block_5, [0, -128], [65, 32])
         # self.scene.items.append(block)
 
-        block = SecretBlock(self.scene, [100, 128])
+        block = SecretBlock(self.scene, [100, 160])
+        self.scene.items.append(block)
+
+        block = SecretBlock(self.scene, [116, 128])
+        self.scene.items.append(block)
+
+        block = SecretBlock(self.scene, [148, 128])
         self.scene.items.append(block)
 
         self.scene.items.append(mario)
