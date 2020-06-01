@@ -2,87 +2,14 @@
 import os
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtCore import Qt
-import time
 import logging
 import sys
-
+from . import camera, grid
 
 LOG = logging.getLogger(__name__)
 
 
 class TilesView(QtWidgets.QWidget):
-    class Camera:
-        ide_state = 0
-        move_state = 1
-
-        def __init__(self):
-            self.pos = QtCore.QPointF(0., 0.)
-            self.scale = 10.
-            self.state = self.ide_state
-            self.start_pos = QtCore.QPoint()
-            self.offset = QtCore.QPointF()
-
-        def move(self, pos):
-            if self.state == self.move_state:
-                offset = (pos - self.start_pos)
-                self.offset.setX(offset.x())
-                self.offset.setY(offset.y())
-                return 1
-
-        def get_pos(self):
-            return self.pos + self.offset
-
-        def start_move(self, pos):
-            self.start_pos = pos
-            self.state = self.move_state
-
-        def stop_move(self):
-            if self.state == self.move_state:
-                self.pos = self.get_pos()
-                self.offset = QtCore.QPointF()
-                self.state = self.ide_state
-
-        def update_scale(self, pos):
-            self.scale += pos.y() * 0.01
-
-    class Grid:
-        brush = QtGui.QBrush(Qt.NoBrush)
-        pen = QtGui.QPen(Qt.SolidLine)
-        pen.setColor(Qt.red)
-        pen.setCosmetic(True)
-        pen.setWidth(2)
-
-        ide_state = 0
-        move_state = 1
-
-        def __init__(self, scene):
-            self.scene = scene
-            self.rect = QtCore.QRect(0, 0, 32, 32)
-            self.offset = QtCore.QPointF()
-            self.size = [0, 0]
-            self.state = self.ide_state
-
-        def update(self, painter):
-            painter.setBrush(self.brush)
-            painter.setPen(self.pen)
-            painter.drawRect(self.rect)
-
-        def start_move(self, pos):
-            self.state = self.move_state
-            self.offset_start_pos = pos
-            self.top_left = self.rect.topLeft()
-
-        def stop_move(self, pos):
-            if self.state == self.move_state:
-                self.state = self.ide_state
-
-        def move(self, pos):
-            if self.state == self.move_state:
-                self.rect.moveTopLeft(
-                    self.top_left + (
-                        pos - self.offset_start_pos) / self.scene.camera.scale)
-                return 1
-
     def __init__(self, parent=None):
         super(TilesView, self).__init__(parent)
         self.setBackgroundRole(QtGui.QPalette.Base)
@@ -94,13 +21,12 @@ class TilesView(QtWidgets.QWidget):
             os.path.split(__file__)[0], '../images/tiles.png')
         self.pixmap = QtGui.QPixmap(file_path)
         self.key_map = {}
-        self.camera = self.Camera()
-        self.grid = self.Grid(self)
+        self.camera = camera.Camera()
+        self.grid = grid.Grid(self)
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
-        painter.translate(self.camera.get_pos())
-        painter.scale(self.camera.scale, self.camera.scale)
+        painter.setTransform(self.camera.transform)
         painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
         painter.drawPixmap(QtCore.QPointF(), self.pixmap)
 
@@ -125,7 +51,8 @@ class TilesView(QtWidgets.QWidget):
             if self.key_map.get(Qt.Key_Shift, 0):
                 self.camera.start_move(event.pos())
             else:
-                self.grid.start_move(event.pos())
+                self.grid.start_move(
+                    self.camera.to_scene(event.pos()))
         event.accept()
 
     def mouseReleaseEvent(self, event):
@@ -133,7 +60,7 @@ class TilesView(QtWidgets.QWidget):
             if self.key_map.get(Qt.Key_Shift, 0):
                 self.camera.stop_move()
             else:
-                self.grid.stop_move(event.pos())
+                self.grid.stop_move()
         event.accept()
 
     def mouseMoveEvent(self, event):
@@ -142,7 +69,9 @@ class TilesView(QtWidgets.QWidget):
         if self.camera.move(event.pos()):
             update = True
 
-        if self.grid.move(event.pos()):
+        pos = self.camera.to_scene(event.pos())
+        print(pos)
+        if self.grid.move(pos):
             update = True
 
         if update:
@@ -162,7 +91,3 @@ def main():
     window = TilesView()
     window.show()
     sys.exit(app.exec_())
-
-
-if __name__ == '__main__':
-    main()
