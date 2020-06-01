@@ -30,12 +30,13 @@ class Grid:
         painter.drawRect(self.rect)
 
     def start_move(self, pos):
-
         top_left = self.rect.topLeft()
         # 1. calculate offset for choose borders
         offsets = self.view.camera.to_scene(
             self.view.camera.to_view(top_left) +
-            QtCore.QPointF(self.selector_size, self.selector_size)) - top_left
+            QtCore.QPointF(
+                self.selector_size,
+                self.selector_size)) - top_left
 
         if self.rect.contains(pos):
             top_left_rect = QtCore.QRectF(
@@ -48,6 +49,7 @@ class Grid:
                 self.state = self.move_top_left
                 self.start_move_pos = pos
                 self.top_left = self.rect.topLeft()
+                return 1
             else:
                 top_right = self.rect.topRight()
                 top_right_rect = QtCore.QRectF(
@@ -60,6 +62,7 @@ class Grid:
                     self.state = self.move_top_right
                     self.start_move_pos = pos
                     self.top_right = self.rect.topRight()
+                    return 1
                 else:
                     bottom_left = self.rect.bottomLeft()
                     bottom_left_rect = QtCore.QRectF(
@@ -72,6 +75,7 @@ class Grid:
                         self.state = self.move_bottom_left
                         self.start_move_pos = pos
                         self.bottom_left = self.rect.bottomLeft()
+                        return 1
                     else:
                         bottom_right = self.rect.bottomRight()
                         bottom_right_rect = QtCore.QRectF(
@@ -84,15 +88,16 @@ class Grid:
                             self.state = self.move_bottom_right
                             self.start_move_pos = pos
                             self.bottom_right = self.rect.bottomRight()
+                            return 1
                         else:
                             print("all")
                             self.state = self.move_state
                             self.start_move_pos = pos
                             self.top_left = self.rect.topLeft()
+                            return 1
 
     def stop_move(self):
-        if self.state == self.move_state:
-            self.state = self.ide_state
+        self.state = self.ide_state
 
     def move(self, pos):
         if self.state == self.move_state:

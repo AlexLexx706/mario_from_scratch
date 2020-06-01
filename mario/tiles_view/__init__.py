@@ -16,13 +16,16 @@ class TilesView(QtWidgets.QWidget):
         self.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding,
             QtWidgets.QSizePolicy.Expanding)
-
         file_path = os.path.join(
             os.path.split(__file__)[0], '../images/tiles.png')
         self.pixmap = QtGui.QPixmap(file_path)
         self.key_map = {}
         self.camera = camera.Camera()
-        self.grid = grid.Grid(self)
+        self.grids = []
+        self.grids.append(grid.Grid(self))
+        self.cur_grid = None
+        self.showMaximized()
+        self.camera.scale(4)
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
@@ -31,7 +34,8 @@ class TilesView(QtWidgets.QWidget):
         painter.drawPixmap(QtCore.QPointF(), self.pixmap)
 
         # drow grid
-        self.grid.update(painter)
+        for cur_grid in self.grids:
+            cur_grid.update(painter)
 
     def keyPressEvent(self, event):
         if not event.isAutoRepeat():
@@ -50,17 +54,21 @@ class TilesView(QtWidgets.QWidget):
         if event.button() == Qt.LeftButton:
             if self.key_map.get(Qt.Key_Shift, 0):
                 self.camera.start_move(event.pos())
-            else:
-                self.grid.start_move(
-                    self.camera.to_scene(event.pos()))
+            elif self.key_map.get(Qt.Key_Control, 0):
+                for cur_grid in self.grids:
+                    if cur_grid.start_move(
+                            self.camera.to_scene(event.pos())):
+                        self.cur_grid = cur_grid
+                        break
+                else:
+                    print("nooo")
         event.accept()
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
-            if self.key_map.get(Qt.Key_Shift, 0):
-                self.camera.stop_move()
-            else:
-                self.grid.stop_move()
+            self.camera.stop_move()
+            if self.cur_grid:
+                self.cur_grid.stop_move()
         event.accept()
 
     def mouseMoveEvent(self, event):
@@ -69,11 +77,9 @@ class TilesView(QtWidgets.QWidget):
         if self.camera.move(event.pos()):
             update = True
 
-        pos = self.camera.to_scene(event.pos())
-        print(pos)
-        if self.grid.move(pos):
-            update = True
-
+        if self.cur_grid:
+            if self.cur_grid.move(self.camera.to_scene(event.pos())):
+                update = True
         if update:
             self.update()
 

@@ -19,6 +19,10 @@ class Camera:
             self.inverted = self.transform.inverted()[0]
             return 1
 
+    def scale(self, scale):
+        self.transform = QtGui.QTransform.fromScale(scale, scale)
+        self.inverted = self.transform.inverted()[0]
+
     def start_move(self, pos):
         self.last_pos = pos
         self.state = self.move_state
