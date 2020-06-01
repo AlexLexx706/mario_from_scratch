@@ -10,6 +10,8 @@ LOG = logging.getLogger(__name__)
 
 
 class TilesView(QtWidgets.QWidget):
+    current_grid_changed = QtCore.pyqtSignal(object)
+
     def __init__(self, parent=None):
         super(TilesView, self).__init__(parent)
         self.setBackgroundRole(QtGui.QPalette.Base)
@@ -23,13 +25,14 @@ class TilesView(QtWidgets.QWidget):
         self.camera = camera.Camera()
         self.grids = []
         self.grids.append(grid.Grid(self))
+        # self.grids.append(grid.Grid(self))
         self.cur_grid = None
-        self.showMaximized()
+        # self.showMaximized()
         self.camera.scale(4)
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
-        painter.setTransform(self.camera.transform)
+        painter.setWorldTransform(self.camera.transform)
         painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
         painter.drawPixmap(QtCore.QPointF(), self.pixmap)
 
@@ -58,10 +61,15 @@ class TilesView(QtWidgets.QWidget):
                 for cur_grid in self.grids:
                     if cur_grid.start_move(
                             self.camera.to_scene(event.pos())):
+                        if self.cur_grid is not None:
+                            self.cur_grid.set_selected(0)
+                        last_grid = self.cur_grid
                         self.cur_grid = cur_grid
+                        self.cur_grid.set_selected(1)
+
+                        if last_grid != self.cur_grid:
+                            self.current_grid_changed.emit(self.cur_grid)
                         break
-                else:
-                    print("nooo")
         event.accept()
 
     def mouseReleaseEvent(self, event):

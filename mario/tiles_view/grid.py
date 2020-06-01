@@ -4,20 +4,15 @@ import math
 
 
 class Grid:
-    selected_size = 4
-    not_selected_size = 2
+    selected_size = 6
+    not_selected_size = 4
 
-    brush = QtGui.QBrush(Qt.NoBrush)
+    selected_brush = QtGui.QBrush(QtGui.QColor(255, 0, 0, 100))
 
     pen = QtGui.QPen(Qt.SolidLine)
     pen.setColor(Qt.red)
     pen.setCosmetic(True)
     pen.setWidth(not_selected_size)
-
-    pen_blue = QtGui.QPen(Qt.SolidLine)
-    pen_blue.setColor(Qt.blue)
-    pen_blue.setCosmetic(True)
-    pen_blue.setWidth(2)
 
     selector_brush = QtGui.QBrush(Qt.blue, Qt.SolidPattern)
 
@@ -28,7 +23,10 @@ class Grid:
     move_bottom_left = 4
     move_bottom_right = 5
 
-    selector_size = 10
+    selector_size = 15
+
+    font_pen = QtGui.QPen(Qt.black)
+    font = QtGui.QFont("Times", 24, QtGui.QFont.Bold)
 
     def __init__(self, view):
         self.view = view
@@ -36,24 +34,38 @@ class Grid:
         self.state = self.ide_state
         self.rows = 3
         self.columns = 3
-        self.columns_offset = 0
+        self.colums_offset = 0
         self.rows_offset = 0
         self.selected = 1
         self.show_grid = 1
         self.selector_offsets = None
         self.show_selector = 1
+        self.show_names = 1
+        self.names = [
+            [0, 0, "1"],
+            [2, 1, "Hi"]
+        ]
+        self.selected_cell = None
 
     def set_rows(self, rows):
-        self.rows = rows
+        if rows >= 1 and rows != self.rows:
+            self.rows = rows
+            self.view.update()
 
     def set_columns(self, columns):
-        self.columns = columns
+        if columns >= 1 and columns != self.columns:
+            self.columns = columns
+            self.view.update()
 
-    def set_columns_offset(self, offset):
-        self.columns_offset = offset
+    def set_colums_offset(self, offset):
+        if offset != self.colums_offset:
+            self.colums_offset = offset
+            self.view.update()
 
     def set_rows_offset(self, offset):
-        self.rows_offset = offset
+        if offset != self.rows_offset:
+            self.rows_offset = offset
+            self.view.update()
 
     def draw_selecter(self, painter):
         painter.setBrush(self.selector_brush)
@@ -76,11 +88,10 @@ class Grid:
                 pos.y(),
                 self.selector_offsets.x(),
                 self.selector_offsets.y())
-            print(rect)
             painter.drawRect(rect)
 
     def draw_grid(self, painter):
-        painter.setBrush(self.brush)
+        painter.setBrush(Qt.NoBrush)
         self.pen.setWidth(self.not_selected_size)
         painter.setPen(self.pen)
 
@@ -97,28 +108,85 @@ class Grid:
             for i in range(1, self.rows + 1):
                 y = s_y + i * height
                 y_2 = y - self.rows_offset
-                painter.drawLine(s_x, y, e_x, y)
-                painter.drawLine(s_x, y_2, e_x, y_2)
+                painter.drawLine(
+                    QtCore.QPointF(s_x, y),
+                    QtCore.QPointF(e_x, y))
+                painter.drawLine(
+                    QtCore.QPointF(s_x, y_2),
+                    QtCore.QPointF(e_x, y_2))
         else:
             for i in range(1, self.rows + 1):
                 y = s_y + i * height
-                painter.drawLine(s_x, y, e_x, y)
+                painter.drawLine(
+                    QtCore.QPointF(s_x, y),
+                    QtCore.QPointF(e_x, y))
 
         # show colls
         width = self.rect.width() / self.columns
-        if self.columns_offset:
+        if self.colums_offset:
             for i in range(1, self.columns + 1):
                 x = s_x + i * width
-                x_2 = x - self.columns_offset
-                painter.drawLine(x, s_y, x, e_y)
-                painter.drawLine(x_2, s_y, x_2, e_y)
+                x_2 = x - self.colums_offset
+                painter.drawLine(
+                    QtCore.QPointF(x, s_y),
+                    QtCore.QPointF(x, e_y))
+                painter.drawLine(
+                    QtCore.QPointF(x_2, s_y),
+                    QtCore.QPointF(x_2, e_y))
         else:
             for i in range(1, self.columns + 1):
                 x = s_x + i * width
-                painter.drawLine(x, s_y, x, e_y)
+                painter.drawLine(
+                    QtCore.QPointF(x, s_y),
+                    QtCore.QPointF(x, e_y))
+
+    def draw_names(self, painter):
+        points = []
+
+        top_left = self.rect.topLeft()
+        col_step = self.rect.width() / self.columns
+        width = col_step - self.colums_offset
+
+        row_step = self.rect.height() / self.rows
+        height = row_step - self.rows_offset
+
+        for row, col, text in self.names:
+            if row >= 0 and row < self.rows and\
+                    col >= 0 and col < self.columns:
+                points.append((
+                    painter.transform().mapRect(
+                        QtCore.QRectF(
+                            top_left.x() + col * col_step,
+                            top_left.y() + row * row_step,
+                            width,
+                            height)), text))
+
+        # draw selected cell
+        if self.selected_cell is not None:
+            painter.setBrush(self.selected_brush)
+            painter.setPen(Qt.NoPen)
+            painter.drawRect(
+                QtCore.QRectF(
+                    top_left + QtCore.QPointF(
+                        col_step * self.selected_cell[0],
+                        row_step * self.selected_cell[1],
+                    ),
+                    QtCore.QSizeF(width, height)
+                )
+            )
+
+        # reset transform
+        painter.save()
+        painter.setWorldTransform(QtGui.QTransform())
+        painter.setFont(self.font)
+        painter.setPen(self.font_pen)
+
+        for rect, text in points:
+            painter.drawText(rect, text)
+        painter.restore()
 
     def update(self, painter):
-        painter.setBrush(self.brush)
+        painter.setBrush(Qt.NoBrush)
         self.pen.setWidth(
             self.selected_size if self.selected else self.not_selected_size)
         painter.setPen(self.pen)
@@ -126,6 +194,9 @@ class Grid:
 
         if self.show_grid:
             self.draw_grid(painter)
+
+        if self.show_names:
+            self.draw_names(painter)
 
         if self.show_selector:
             self.draw_selecter(painter)
@@ -190,10 +261,20 @@ class Grid:
                                 self.start_move_pos = pos
                                 self.bottom_right = self.rect.bottomRight()
                                 return 1
+                            # move all
                             else:
                                 self.state = self.move_state
                                 self.start_move_pos = pos
                                 self.top_left = self.rect.topLeft()
+
+                                # get selected cell
+                                width = self.rect.width() / self.columns
+                                height = self.rect.height() / self.rows
+                                pos = pos - self.rect.topLeft()
+                                col = math.trunc(pos.x() / width)
+                                row = math.trunc(pos.y() / height)
+                                self.selected_cell = [col, row]
+                                print(self.selected_cell)
                                 return 1
         finally:
             self.view.update()
