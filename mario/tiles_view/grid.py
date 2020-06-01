@@ -10,6 +10,11 @@ class Grid:
     pen.setCosmetic(True)
     pen.setWidth(2)
 
+    pen_blue = QtGui.QPen(Qt.SolidLine)
+    pen_blue.setColor(Qt.blue)
+    pen_blue.setCosmetic(True)
+    pen_blue.setWidth(2)
+
     ide_state = 0
     move_state = 1
     move_top_left = 2
@@ -23,11 +28,66 @@ class Grid:
         self.view = view
         self.rect = QtCore.QRectF(0., 0., 32., 32.)
         self.state = self.ide_state
+        self.rows = 3
+        self.columns = 3
+        self.columns_offset = 1
+        self.rows_offset = 1
+
+    def set_rows(self, rows):
+        self.rows = rows
+
+    def set_columns(self, columns):
+        self.columns = columns
+
+    def set_columns_offset(self, offset):
+        self.columns_offset = offset
+
+    def set_rows_offset(self, offset):
+        self.rows_offset = offset
 
     def update(self, painter):
         painter.setBrush(self.brush)
         painter.setPen(self.pen)
         painter.drawRect(self.rect)
+
+        s_x = self.rect.x()
+        s_y = self.rect.y()
+
+        bottom_right = self.rect.bottomRight()
+        e_x = bottom_right.x()
+        e_y = bottom_right.y()
+
+        # show rows
+        height = self.rect.height() / self.rows
+        if self.rows_offset:
+            for i in range(1, self.rows + 1):
+                y = s_y + i * height
+                y_2 = y - self.rows_offset
+                # painter.setPen(self.pen_blue)
+                painter.drawLine(s_x, y, e_x, y)
+
+                # painter.setPen(self.pen)
+                painter.drawLine(s_x, y_2, e_x, y_2)
+        else:
+            for i in range(1, self.rows + 1):
+                y = s_y + i * height
+                painter.drawLine(s_x, y, e_x, y)
+
+        # show colls
+        width = self.rect.width() / self.columns
+        if self.columns_offset:
+            for i in range(1, self.columns + 1):
+                x = s_x + i * width
+                x_2 = x - self.columns_offset
+                # painter.setPen(self.pen_blue)
+                painter.drawLine(x, s_y, x, e_y)
+
+                # painter.setPen(self.pen)
+                painter.drawLine(x_2, s_y, x_2, e_y)
+        else:
+            for i in range(1, self.columns + 1):
+                x = s_x + i * width
+                painter.drawLine(x, s_y, x, e_y)
 
     def start_move(self, pos):
         top_left = self.rect.topLeft()
