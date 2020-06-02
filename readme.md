@@ -1,1 +1,1 @@
-tails game from scratch based of mario textures
+The arcade from scratch based on the Mario textures.
