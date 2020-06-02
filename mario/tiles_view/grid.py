@@ -7,7 +7,7 @@ class Grid:
     selected_size = 6
     not_selected_size = 4
 
-    selected_brush = QtGui.QBrush(QtGui.QColor(255, 0, 0, 100))
+    selected_brush = QtGui.QBrush(QtGui.QColor(255, 0, 0, 150))
 
     pen = QtGui.QPen(Qt.SolidLine)
     pen.setColor(Qt.red)
@@ -274,7 +274,6 @@ class Grid:
                                 col = math.trunc(pos.x() / width)
                                 row = math.trunc(pos.y() / height)
                                 self.selected_cell = [col, row]
-                                print(self.selected_cell)
                                 return 1
         finally:
             self.view.update()
